@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import { request } from '../api/client'
 import { AllowanceTransaction } from '../types'
 import { distributeAllowance, getAllowanceTransactions } from '../api'
 

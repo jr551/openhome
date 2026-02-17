@@ -30,7 +30,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
     }))
 
     res.json(parsedTransactions)
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to fetch allowance transactions' })
   }
 })
@@ -43,7 +43,7 @@ router.post('/distribute', authenticate, async (req: AuthRequest, res: Response)
       return
     }
 
-    const { amount, distribution, notes, userIds } = req.body // Expecting userIds to distribute to multiple children
+    const { amount, distribution, notes: _notes, userIds } = req.body // Expecting userIds to distribute to multiple children
 
     if (!amount || !distribution || !userIds || !Array.isArray(userIds)) {
       res.status(400).json({ error: 'Missing required fields' })

@@ -18,7 +18,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
     }))
 
     res.json(parsedRewards)
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to fetch rewards' })
   }
 })
@@ -45,8 +45,15 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
       }
     })
 
-    res.status(201).json(reward)
-  } catch (error) {
+    // Issue #10: API consistency: create chore/reward responses return stringified JSON fields
+    // Question: Should we use a common transformer to handle this for all routes?
+    const parsedReward = {
+      ...reward,
+      photos: JSON.parse(reward.photos || '[]')
+    }
+
+    res.status(201).json(parsedReward)
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to create reward' })
   }
 })

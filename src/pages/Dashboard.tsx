@@ -6,7 +6,7 @@ import { registerMember } from '../api/auth'
 import { Plus } from 'lucide-react'
 
 export const Dashboard = () => {
-  const { user, family, token } = useStore()
+  const { user, family, token, setAuth } = useStore()
   const [chores, setChores] = useState<any[]>([])
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [newMemberName, setNewMemberName] = useState('')
@@ -55,7 +55,17 @@ export const Dashboard = () => {
               <h1 className="text-2xl font-bold">Select Profile</h1>
               <div className="grid grid-cols-2 gap-4 mt-4">
                   {family.members?.map(member => (
-                      <div key={member.id} className="border p-4 rounded text-center cursor-pointer hover:bg-gray-100">
+                      <div
+                        key={member.id}
+                        className="border p-4 rounded text-center cursor-pointer hover:bg-gray-100"
+                        onClick={() => {
+                            // Issue #7: UI bug: Dashboard 'Select Profile' screen has no selection handler
+                            // Question: Should there be a PIN verification for each profile, or is family-level PIN enough?
+                            if (token && family) {
+                                setAuth({ token, family, user: member })
+                            }
+                        }}
+                      >
                           <div className="text-4xl">{member.avatar}</div>
                           <div className="mt-2 font-bold">{member.name}</div>
                       </div>
