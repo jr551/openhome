@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import { request } from '../api/client'
 import { Reward } from '../types'
 import { createReward, getRewards, redeemReward } from '../api'
 import { Plus, Gift } from 'lucide-react'
 
 export const Rewards = () => {
-  const { user, family, token } = useStore()
+  const { user, family: _family, token } = useStore()
   const [rewards, setRewards] = useState<Reward[]>([])
   const [isCreating, setIsCreating] = useState(false)
   

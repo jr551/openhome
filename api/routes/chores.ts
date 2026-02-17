@@ -71,7 +71,15 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
       ))
     }
 
-    res.status(201).json(chore)
+    // Issue #10: API consistency: create chore/reward responses return stringified JSON fields
+    // Question: Should we use a common transformer to handle this for all routes?
+    const parsedChore = {
+      ...chore,
+      schedule: JSON.parse(chore.schedule),
+      photos: JSON.parse(chore.photos || '[]'),
+    }
+
+    res.status(201).json(parsedChore)
   } catch (error) {
     console.error('Create chore error:', error)
     res.status(500).json({ error: 'Failed to create chore' })
@@ -114,7 +122,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promis
     }
 
     res.json(parsedChore)
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to fetch chore' })
   }
 })
@@ -155,7 +163,7 @@ router.post('/:id/complete', authenticate, async (req: AuthRequest, res: Respons
     })
 
     res.status(201).json(completion)
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to submit completion' })
   }
 })
@@ -163,7 +171,7 @@ router.post('/:id/complete', authenticate, async (req: AuthRequest, res: Respons
 // Approve Completion
 router.post('/:id/approve', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params // This is chore ID or completion ID? Usually completion ID or pass chore ID and completion ID
+    const { id: _id } = req.params // This is chore ID or completion ID? Usually completion ID or pass chore ID and completion ID
     // Architecture says /api/chores/:id/approve
     // Let's assume :id is the completion ID or we find the pending completion for this chore
     // If it's chore ID, we need completion ID from body
@@ -212,7 +220,7 @@ router.post('/:id/approve', authenticate, async (req: AuthRequest, res: Response
     }
 
     res.json({ success: true, status })
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to approve completion' })
   }
 })

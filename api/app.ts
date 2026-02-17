@@ -44,12 +44,17 @@ app.use('/api/allowance', allowanceRoutes)
 app.use('/api/rewards', rewardsRoutes)
 app.use('/api/chat', chatRoutes)
 
+// Issue #6: Deployment: Realtime chat likely broken on Vercel/serverless
+// Question: Since Vercel functions are stateless and have short timeouts,
+// should we migrate to a serverless-friendly realtime solution like Pusher, Ably, or Upstash?
+// Currently, Socket.io will only work on a persistent Node.js environment.
+
 /**
  * health
  */
 app.use(
   '/api/health',
-  (req: Request, res: Response, next: NextFunction): void => {
+  (_req: Request, res: Response): void => {
     res.status(200).json({
       success: true,
       message: 'ok',
@@ -71,7 +76,7 @@ if (process.env.NODE_ENV === 'production') {
 /**
  * error handler middleware
  */
-app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((_error: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({
     success: false,
     error: 'Server internal error',

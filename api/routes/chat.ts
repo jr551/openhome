@@ -22,7 +22,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
     })).reverse() // Return in chronological order
 
     res.json(parsedMessages)
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to fetch messages' })
   }
 })
@@ -58,14 +58,13 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
         attachments: JSON.parse(message.attachments || '[]')
     }
 
-    // @ts-ignore
     const io = req.app.get('io')
     if (io) {
         io.to(familyId).emit('message', parsedMessage)
     }
 
     res.status(201).json(parsedMessage)
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to send message' })
   }
 })

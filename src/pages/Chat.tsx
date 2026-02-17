@@ -9,7 +9,7 @@ export const Chat = () => {
   const { user, token } = useStore()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [content, setContent] = useState('')
-  const [socket, setSocket] = useState<Socket | null>(null)
+  const [_socket, setSocket] = useState<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -27,7 +27,13 @@ export const Chat = () => {
     getChatHistory(token).then(setMessages).catch(console.error)
 
     // Connect socket
-    const newSocket = io('http://localhost:3001', {
+    // Issue #5: Bug: Chat socket client hardcoded to http://localhost:3001
+    // Question: Should we use VITE_API_URL or default to current origin?
+    const socketUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace(/\/api$/, '')
+      : (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin)
+
+    const newSocket = io(socketUrl, {
       auth: { token }
     })
 
