@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=file:/app/prod.db
+      - JWT_SECRET=secret
+      - NODE_ENV=production
+    volumes:
+      - ./uploads:/app/uploads
+      - ./prod.db:/app/prod.db

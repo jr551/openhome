@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Family {
+  id          String   @id @default(uuid())
+  familyCode  String   @unique
+  name        String
+  pinHash     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     User[]
+  chores      Chore[]
+  rewards     Reward[]
+  messages    ChatMessage[]
+}
+
+model User {
+  id          String   @id @default(uuid())
+  familyId    String
+  name        String
+  role        String   // 'parent' | 'child'
+  avatar      String?  @default("👤")
+  points      Int      @default(0)
+  streak      Int      @default(0)
+  jars        String   @default("{\"spend\": 0, \"save\": 0, \"give\": 0}") // Stored as JSON string
+  lastActive  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  assignments ChoreAssignment[]
+  completions ChoreCompletion[]
+  transactions AllowanceTransaction[]
+  redemptions RewardRedemption[]
+  messages    ChatMessage[]
+}
+
+model Chore {
+  id          String   @id @default(uuid())
+  familyId    String
+  title       String
+  description String?
+  points      Int      @default(10)
+  schedule    String   // Stored as JSON string
+  difficulty  String?  @default("medium") // 'easy' | 'medium' | 'hard'
+  photos      String?  @default("[]") // Stored as JSON string
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  assignments ChoreAssignment[]
+}
+
+model ChoreAssignment {
+  id          String   @id @default(uuid())
+  choreId     String
+  userId      String
+  dueDate     DateTime?
+  status      String   @default("pending") // 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected'
+  createdAt   DateTime @default(now())
+
+  chore       Chore    @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions ChoreCompletion[]
+
+  @@unique([choreId, userId, dueDate])
+}
+
+model ChoreCompletion {
+  id           String   @id @default(uuid())
+  assignmentId String
+  userId       String
+  beforePhotos String?  @default("[]") // Stored as JSON string
+  afterPhotos  String?  @default("[]") // Stored as JSON string
+  notes        String?
+  timeSpent    Int?
+  status       String   @default("pending") // 'pending' | 'approved' | 'rejected'
+  submittedAt  DateTime @default(now())
+  approvedAt   DateTime?
+
+  assignment   ChoreAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AllowanceTransaction {
+  id              String   @id @default(uuid())
+  userId          String
+  type            String   // 'deposit' | 'withdrawal' | 'transfer'
+  amount          Decimal
+  jarDistribution String   // Stored as JSON string
+  source          String?
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Reward {
+  id          String   @id @default(uuid())
+  familyId    String
+  title       String
+  description String?
+  pointCost   Int
+  photos      String?  @default("[]") // Stored as JSON string
+  stock       Int?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  redemptions RewardRedemption[]
+}
+
+model RewardRedemption {
+  id        String   @id @default(uuid())
+  rewardId  String
+  userId    String
+  quantity  Int      @default(1)
+  status    String   @default("pending") // 'pending' | 'approved' | 'fulfilled' | 'rejected'
+  createdAt DateTime @default(now())
+
+  reward    Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id          String   @id @default(uuid())
+  familyId    String
+  userId      String
+  type        String   // 'text' | 'image' | 'system'
+  content     String
+  attachments String?  @default("[]") // Stored as JSON string
+  createdAt   DateTime @default(now())
+
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
