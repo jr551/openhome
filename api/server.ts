@@ -5,14 +5,9 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import app from './app.js';
 import jwt from 'jsonwebtoken';
+import { config } from './config.js';
 
-// Issue #2: Security: JWT/refresh secrets have insecure defaults
-const JWT_SECRET = process.env.JWT_SECRET || 'insecure-dev-secret';
-
-/**
- * start server with port
- */
-const PORT = process.env.PORT || 3001;
+const PORT = config.PORT;
 
 const httpServer = createServer(app);
 
@@ -32,7 +27,7 @@ io.use((socket, next) => {
         return next(new Error('Authentication error'));
     }
     try {
-        const payload = jwt.verify(token, JWT_SECRET) as any;
+        const payload = jwt.verify(token, config.JWT_SECRET) as any;
         socket.data.user = payload;
         next();
     } catch (_err) {

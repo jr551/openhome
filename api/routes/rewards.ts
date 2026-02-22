@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express'
 import { prisma } from '../prisma.js'
 import { authenticate, type AuthRequest } from '../middleware/auth.js'
+import { parseJsonFields, JSON_FIELDS } from '../utils/json.js'
 
 const router = Router()
 
@@ -12,12 +13,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
       where: { familyId, isActive: true },
     })
 
-    const parsedRewards = rewards.map(r => ({
-        ...r,
-        photos: JSON.parse(r.photos || '[]')
-    }))
-
-    res.json(parsedRewards)
+    res.json(parseJsonFields(rewards, JSON_FIELDS))
   } catch (_error) {
     res.status(500).json({ error: 'Failed to fetch rewards' })
   }
@@ -45,14 +41,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
       }
     })
 
-    // Issue #10: API consistency: create chore/reward responses return stringified JSON fields
-    // Question: Should we use a common transformer to handle this for all routes?
-    const parsedReward = {
-      ...reward,
-      photos: JSON.parse(reward.photos || '[]')
-    }
-
-    res.status(201).json(parsedReward)
+    res.status(201).json(parseJsonFields(reward, JSON_FIELDS))
   } catch (_error) {
     res.status(500).json({ error: 'Failed to create reward' })
   }
@@ -64,7 +53,7 @@ router.post('/:id/redeem', authenticate, async (req: AuthRequest, res: Response)
     const { id } = req.params
     const userId = req.user!.userId
 
-    if (!userId) { // Should always be there if authenticated
+    if (!userId) {
         res.status(400).json({ error: 'User ID required' })
         return
     }
@@ -90,7 +79,7 @@ router.post('/:id/redeem', authenticate, async (req: AuthRequest, res: Response)
             data: {
                 rewardId: id,
                 userId,
-                status: 'pending' // Needs parent approval? Or auto-approved? Let's say pending for now.
+                status: 'pending'
             }
         })
 
@@ -111,7 +100,7 @@ router.post('/:id/redeem', authenticate, async (req: AuthRequest, res: Response)
         return redemption
     })
 
-    res.json(result)
+    res.json(parseJsonFields(result, JSON_FIELDS))
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Redemption failed' })
   }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { login, register } from '../api/auth'
 import { useStore } from '../store'
 import { User } from '../types/auth'

@@ -1,8 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-
-// Issue #2: Security: JWT/refresh secrets have insecure defaults
-const JWT_SECRET = process.env.JWT_SECRET || 'insecure-dev-secret'
+import { config } from '../config.js'
 
 export interface AuthRequest extends Request {
   user?: {
@@ -28,7 +26,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as any
+    const payload = jwt.verify(token, config.JWT_SECRET) as any
     req.user = payload
     next()
   } catch (_error) {

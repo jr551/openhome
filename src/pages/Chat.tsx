@@ -2,14 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useStore } from '../store'
 import { getChatHistory, sendMessage } from '../api'
 import { ChatMessage } from '../types'
-import { io, Socket } from 'socket.io-client'
+import { useSocket } from '../hooks/useSocket'
 import { Send } from 'lucide-react'
 
 export const Chat = () => {
   const { user, token } = useStore()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [content, setContent] = useState('')
-  const [_socket, setSocket] = useState<Socket | null>(null)
+  const socket = useSocket()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -25,28 +25,19 @@ export const Chat = () => {
 
     // Fetch history
     getChatHistory(token).then(setMessages).catch(console.error)
+  }, [token])
 
-    // Connect socket
-    // Issue #5: Bug: Chat socket client hardcoded to http://localhost:3001
-    // Question: Should we use VITE_API_URL or default to current origin?
-    const socketUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace(/\/api$/, '')
-      : (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin)
+  useEffect(() => {
+    if (!socket) return
 
-    const newSocket = io(socketUrl, {
-      auth: { token }
-    })
-
-    newSocket.on('message', (message: ChatMessage) => {
+    socket.on('message', (message: ChatMessage) => {
       setMessages(prev => [...prev, message])
     })
 
-    setSocket(newSocket)
-
     return () => {
-      newSocket.disconnect()
+      socket.off('message')
     }
-  }, [token])
+  }, [socket])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
