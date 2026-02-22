@@ -7,21 +7,10 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../prisma.js'
 import { authenticate, type AuthRequest } from '../middleware/auth.js'
+import { config } from '../config.js'
+import { parseJsonFields, JSON_FIELDS } from '../utils/json.js'
 
 const router = Router()
-
-// Issue #2: Security: JWT/refresh secrets have insecure defaults
-// Question: Should we use a secret management service for these in production?
-const JWT_SECRET = process.env.JWT_SECRET;
-const REFRESH_SECRET = process.env.REFRESH_SECRET;
-
-if (!JWT_SECRET || !REFRESH_SECRET) {
-  // In a real app, we might want to handle this more gracefully or via a config loader
-  console.warn('WARNING: JWT_SECRET or REFRESH_SECRET is not set. Using insecure defaults for development only.');
-}
-
-const FINAL_JWT_SECRET = JWT_SECRET || 'insecure-dev-secret';
-const FINAL_REFRESH_SECRET = REFRESH_SECRET || 'insecure-dev-refresh-secret';
 
 /**
  * Register Family
@@ -67,27 +56,21 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     // Generate Token
     const token = jwt.sign(
       { userId: result.user.id, familyId: result.family.id, role: result.user.role },
-      FINAL_JWT_SECRET,
+      config.JWT_SECRET,
       { expiresIn: '1h' }
     )
     
     const refreshToken = jwt.sign(
       { userId: result.user.id, familyId: result.family.id },
-      FINAL_REFRESH_SECRET,
+      config.REFRESH_SECRET,
       { expiresIn: '7d' }
     )
 
     // Remove pinHash from response
-    // Issue #1: Security: /api/auth/register leaks family.pinHash in response
-    // Question: Would a DTO approach be better for all responses?
     const { pinHash: _, ...familyWithoutPin } = result.family
 
-    // Issue #3: Bug: user.jars returned as string but UI expects object
-    // Question: Should parsing be handled globally (e.g., Prisma middleware or DTO)?
-    const parsedUser = {
-      ...result.user,
-      jars: JSON.parse(result.user.jars as string)
-    }
+    // Parse JSON fields
+    const parsedUser = parseJsonFields(result.user, JSON_FIELDS)
 
     res.status(201).json({
       token,
@@ -147,35 +130,21 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       }
       
       tokenPayload = { ...tokenPayload, userId: user.id, role: user.role }
-    } else {
-        // If no userId, maybe login as the first parent or just return family info?
-        // For now, let's assume we need a user to generate a valid token for actions,
-        // but maybe we return a temporary token for family-level access?
-        // Let's just return family info and no token if no userId, 
-        // OR return a token that only allows fetching members?
-        // Architecture says response has token.
-        // Let's return a token with just familyId if no userId.
     }
 
-    // Issue #9: Auth API: /api/auth/login returns token even when userId not selected
-    // Question: Is there a "family-only" access mode intended?
-    // If not, we should only return tokens when a specific user is identified.
     let token = undefined
     let refreshToken = undefined
 
     if (userId) {
-      token = jwt.sign(tokenPayload, FINAL_JWT_SECRET, { expiresIn: '1h' })
-      refreshToken = jwt.sign(tokenPayload, FINAL_REFRESH_SECRET, { expiresIn: '7d' })
+      token = jwt.sign(tokenPayload, config.JWT_SECRET, { expiresIn: '1h' })
+      refreshToken = jwt.sign(tokenPayload, config.REFRESH_SECRET, { expiresIn: '7d' })
     }
 
     // Remove pinHash from response
     const { pinHash: _, ...familyWithoutPin } = family
 
-    // Issue #3: Bug: user.jars returned as string but UI expects object
-    const parsedUser = user ? {
-      ...user,
-      jars: JSON.parse(user.jars as string)
-    } : null
+    // Parse JSON fields
+    const parsedUser = user ? parseJsonFields(user, JSON_FIELDS) : null
 
     res.json({
       token,
@@ -202,10 +171,10 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
     }
 
     try {
-        const payload = jwt.verify(refreshToken, FINAL_REFRESH_SECRET) as any
+        const payload = jwt.verify(refreshToken, config.REFRESH_SECRET) as any
         const token = jwt.sign(
             { userId: payload.userId, familyId: payload.familyId, role: payload.role },
-            FINAL_JWT_SECRET,
+            config.JWT_SECRET,
             { expiresIn: '1h' }
         )
         res.json({ token })
@@ -219,8 +188,6 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
  * GET /api/auth/me
  */
 router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
-    // Issue #4: Missing endpoint: GET /api/auth/me returns 501 (no user refresh)
-    // Question: Should we also return the Family object here for a complete "refresh"?
     try {
         const { userId, familyId } = req.user!
 
@@ -250,10 +217,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise
         }
 
         const { pinHash: _, ...familyWithoutPin } = user.family
-        const parsedUser = {
-            ...user,
-            jars: JSON.parse(user.jars as string)
-        }
+        const parsedUser = parseJsonFields(user, JSON_FIELDS)
 
         res.json({ user: parsedUser, family: familyWithoutPin })
     } catch (error) {
@@ -291,11 +255,7 @@ router.post('/register-member', authenticate, async (req: AuthRequest, res: Resp
             }
         })
 
-        // Issue #3: Bug: user.jars returned as string but UI expects object
-        const parsedUser = {
-            ...newUser,
-            jars: JSON.parse(newUser.jars as string)
-        }
+        const parsedUser = parseJsonFields(newUser, JSON_FIELDS)
 
         res.status(201).json(parsedUser)
     } catch (error) {

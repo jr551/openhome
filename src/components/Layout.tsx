@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation } from 'react-router'
 import { Home, CheckSquare, Coins, Gift, MessageCircle, LogOut } from 'lucide-react'
 import { useStore } from '../store'
 

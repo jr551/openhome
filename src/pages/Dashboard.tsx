@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { request } from '../api/client'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { registerMember } from '../api/auth'
 import { Plus } from 'lucide-react'
 import { Family, User } from '../types/auth'
