@@ -8,11 +8,11 @@ export const Rewards = () => {
   const { user, family: _family, token } = useStore()
   const [rewards, setRewards] = useState<Reward[]>([])
   const [isCreating, setIsCreating] = useState(false)
-  
+
   // Form
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [pointCost, setPointCost] = useState(50)
+  const [pointCost, setPointCost] = useState('')
   const [stock, setStock] = useState('')
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export const Rewards = () => {
       setIsCreating(false)
       setTitle('')
       setDescription('')
-      setPointCost(50)
+      setPointCost('')
       setStock('')
     } catch (error) {
       console.error(error)
@@ -58,7 +58,7 @@ export const Rewards = () => {
         alert('Reward redeemed! Check your email/notifications.')
         // Optimistic update
         // In real app, re-fetch user to update points
-        window.location.reload() 
+        window.location.reload()
       } catch (error: any) {
         console.error(error)
         alert(error.message || 'Redemption failed')
@@ -71,7 +71,7 @@ export const Rewards = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-teal-700">Rewards Shop</h1>
         {user?.role === 'parent' && (
-          <button 
+          <button
             onClick={() => setIsCreating(!isCreating)}
             className="bg-teal-600 text-white p-2 rounded-full shadow-lg hover:bg-teal-700"
           >
@@ -116,9 +116,10 @@ export const Rewards = () => {
                   type="number"
                   required
                   min="1"
+                  placeholder="e.g. 50"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
                   value={pointCost}
-                  onChange={e => setPointCost(Number(e.target.value))}
+                  onChange={e => setPointCost(e.target.value)}
                 />
               </div>
               <div className="flex-1">
@@ -144,26 +145,26 @@ export const Rewards = () => {
         {rewards.map(reward => (
           <div key={reward.id} className="bg-white p-4 rounded-lg shadow-sm border flex flex-col">
             <div className="flex justify-center mb-4 text-teal-100">
-                <Gift size={64} className="text-teal-500" />
+              <Gift size={64} className="text-teal-500" />
             </div>
             <h3 className="font-bold text-lg text-center">{reward.title}</h3>
             <p className="text-gray-600 text-sm text-center mt-1 flex-1">{reward.description}</p>
-            
+
             <div className="mt-4 flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                    {reward.stock !== null ? `${reward.stock} left` : 'Unlimited'}
-                </div>
-                <div className="font-bold text-orange-600">{reward.pointCost} 🪙</div>
+              <div className="text-sm text-gray-500">
+                {reward.stock !== null ? `${reward.stock} left` : 'Unlimited'}
+              </div>
+              <div className="font-bold text-orange-600">{reward.pointCost} 🪙</div>
             </div>
 
             {user?.role === 'child' && (
-                <button
-                    onClick={() => handleRedeem(reward)}
-                    disabled={user.points < reward.pointCost || (reward.stock !== null && reward.stock <= 0)}
-                    className="mt-4 w-full bg-teal-600 text-white py-2 rounded-md hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Redeem
-                </button>
+              <button
+                onClick={() => handleRedeem(reward)}
+                disabled={user.points < reward.pointCost || (reward.stock !== null && reward.stock <= 0)}
+                className="mt-4 w-full bg-teal-600 text-white py-2 rounded-md hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Redeem
+              </button>
             )}
           </div>
         ))}

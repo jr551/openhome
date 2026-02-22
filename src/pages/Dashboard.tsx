@@ -4,6 +4,7 @@ import { request } from '../api/client'
 import { useNavigate } from 'react-router-dom'
 import { registerMember } from '../api/auth'
 import { Plus } from 'lucide-react'
+import { Family, User } from '../types/auth'
 
 export const Dashboard = () => {
   const { user, family, token, setAuth } = useStore()
@@ -33,12 +34,14 @@ export const Dashboard = () => {
 
     try {
       await registerMember(token, newMemberName, newMemberRole)
-      alert('Member added! Please re-login to see changes (or refresh if family data is re-fetched).')
-      // Ideally we should refetch family data here. 
-      // Since useStore doesn't expose a refetch, we might need to reload or manually update store.
-      // For MVP, just alerting.
+      // Refresh family data from the server so new member appears immediately
+      const meData = await request<{ user: User; family: Family }>('/auth/me', { token })
+      if (meData.family) {
+        setAuth({ token, user: meData.user || user!, family: meData.family })
+      }
       setIsAddingMember(false)
       setNewMemberName('')
+      alert(`${newMemberName} added to the family!`)
     } catch (error) {
       console.error(error)
       alert('Failed to add member')
